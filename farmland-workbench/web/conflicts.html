@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>冲突合并 · 农田工作台</title>
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<header class="topbar">
+  <h1">⚖️ 冲突合并与待补证据</h1>
+  <nav class="tabs">
+    <a href="/index.html">地图·时间线</a>
+    <a href="/capture.html">移动端录入</a>
+    <a href="/conflicts.html" class="active">冲突与待补</a>
+    <a href="/report.html">报告</a>
+  </nav>
+</header>
+<div class="mobile-wrap" style="max-width:980px">
+  <div class="panel">
+    <h2>📍 两人标注同处 (冲突)</h2>
+    <p class="muted">系统只提示距离 ≤ 30m 的不同标注者, 不覆盖、不自动合并。
+      可保留双标、人工合并或忽略。</p>
+    <table id="conflict-table"><thead><tr>
+      <th>状态</th><th>标注 A</th><th>标注 B</th><th>距离</th><th>操作</th>
+    </tr></thead><tbody></tbody></table>
+  </div>
+
+  <div class="panel">
+    <h2>🔗 人工合并建议</h2>
+    <p class="muted">⚠️ 系统不会因为图像相似自动合并发现或巡检事件。
+      同一发现的多次巡检证据应挂不同 inspection_event, 而不是合并。</p>
+    <table id="merge-table"><thead><tr>
+      <th>建议</th><th>理由</th><th>提出人</th><th>状态</th><th>操作</th>
+    </tr></thead><tbody></tbody></table>
+    <div class="row" style="margin-top:8px">
+      <select id="m-src"></select><select id="m-tgt"></select>
+      <input id="m-reason" placeholder="人工依据 (如地面核对同一位置)">
+      <button id="btn-propose">提议合并</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>📎 待补证据 / 占位与异常素材</h2>
+    <table id="pending-table"><thead><tr>
+      <th>发现</th><th>状态</th><th>素材</th><th>拍摄/上传</th><th>处理</th>
+    </tr></thead><tbody></tbody></table>
+  </div>
+
+  <div class="panel">
+    <h2>🎙 语音转写 (晚到模拟)</h2>
+    <div id="tx-list"></div>
+  </div>
+
+  <div class="panel">
+    <h2>📤 导出素材校验</h2>
+    <p class="muted">导出时逐个核对对象存储中的素材, 缺失则中止并列出清单。</p>
+    <button id="btn-check-exports">重新校验最近报告导出</button>
+    <div id="export-result"></div>
+  </div>
+</div>
+<script src="/js/api.js"></script>
+<script src="/js/conflicts.js"></script>
+</body>
+</html>

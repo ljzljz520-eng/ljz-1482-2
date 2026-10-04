@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>航拍农田报告工作台</title>
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<header class="topbar">
+  <h1>🌾 航拍农田报告工作台</h1>
+  <nav class="tabs">
+    <a href="/index.html" class="active">地图·时间线</a>
+    <a href="/capture.html">📱 移动端录入</a>
+    <a href="/conflicts.html">冲突与待补</a>
+    <a href="/report.html">报告与预览</a>
+  </nav>
+  <div class="spacer"></div>
+  <div class="muted" id="actor-label">当前用户: web主管</div>
+</header>
+
+<div class="layout">
+  <div id="map"></div>
+  <div class="side">
+    <div class="panel">
+      <h2>⏱ 时间线 <span class="muted">（飞行日期 / 拍摄 / 上传 分轨）</span></h2>
+      <div class="row muted" style="margin-bottom:6px">
+        <span class="track-label">🟣飞行日期</span>
+        <span class="track-label">🔵拍摄时刻</span>
+        <span class="track-label">🟢上传时刻</span>
+        <span class="track-label">🟡处理(转写晚到)</span>
+      </div>
+      <div id="timeline" class="tl"></div>
+    </div>
+
+    <div class="panel" id="detail-panel">
+      <h2>详情</h2>
+      <div class="muted">点击地图上的发现点 / 地块，或时间线事件查看联动详情。</div>
+    </div>
+
+    <div class="panel">
+      <h2>🛰 飞行与巡检</h2>
+      <div id="flight-list"></div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/map.js"></script>
+<script src="/js/index.js"></script>
+</body>
+</html>

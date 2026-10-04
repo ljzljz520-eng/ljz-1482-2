@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>移动端录入 · 农田工作台</title>
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<header class="topbar">
+  <h1>📱 田间录入</h1>
+  <nav class="tabs">
+    <a href="/index.html">地图·时间线</a>
+    <a href="/capture.html" class="active">移动端录入</a>
+    <a href="/conflicts.html">冲突与待补</a>
+    <a href="/report.html">报告</a>
+  </nav>
+</header>
+
+<div class="mobile-wrap">
+  <div class="panel">
+    <h2>身份与连接</h2>
+    <div class="grid2">
+      <label class="field"><span>设备名</span><input id="dev-name" value="田间手机"></label>
+      <label class="field"><span>录入人</span><input id="actor" value="老赵"></label>
+    </div>
+    <div class="row">
+      <button id="btn-register">注册设备</button>
+      <span id="net-state" class="badge">检测中…</span>
+    </div>
+    <div class="muted" id="dev-id"></div>
+  </div>
+
+  <div class="panel">
+    <h2>① 三种时间 (严格分开)</h2>
+    <div class="grid2">
+      <label class="field"><span>飞行日期 (作业日)</span><input type="date" id="flight-date"></label>
+      <label class="field"><span>巡检日期</span><input type="date" id="event-date"></label>
+    </div>
+    <label class="field"><span>拍摄时间 (设备时钟, 可与上传相差数小时/断网补传)</span>
+      <input type="datetime-local" id="capture-time" step="1"></label>
+    <div class="muted">上传时间由服务端在对象完整到达时生成, 本机不能填写。</div>
+  </div>
+
+  <div class="panel">
+    <h2>② 素材采集</h2>
+    <div class="row">
+      <button id="btn-photo">📷 拍照/选图</button>
+      <input type="file" id="file-input" accept="image/*" capture="environment" hidden>
+      <button id="btn-mic" class="ghost">🎙 按住说话 / 点击录音</button>
+      <button id="btn-video" class="ghost">🎬 选视频</button>
+      <input type="file" id="video-input" accept="video/*" hidden>
+    </div>
+    <div id="media-preview" class="muted">尚未采集素材。</div>
+    <div id="rec-state" class="muted"></div>
+  </div>
+
+  <div class="panel">
+    <h2>③ 录入策略</h2>
+    <div class="row">
+      <label class="muted"><input type="radio" name="mode" value="after" checked>
+        素材上传完成后再录发现</label>
+      <label class="muted"><input type="radio" name="mode" value="placeholder">
+        先创建发现+占位附件 (弱网/断网, 稍后续传)</label>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <label class="muted"><input type="checkbox" id="offline">
+        模拟断网 (全部进入本地队列, 不发起请求)</label>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>④ 定位 (像素不能直接当地理坐标)</h2>
+    <label class="field"><span>定位依据 (必选, 才能给地图坐标)</span>
+      <select id="geo-method">
+        <option value="">暂不定位(仅画面像素)</option>
+        <option value="manual_pin">人工地图刺点 (误差自估)</option>
+        <option value="exif_gps">设备 GNSS / EXIF (设备精度)</option>
+        <option value="frame_projection">镜头投影 (姿态+高度, 误差传播)</option>
+      </select></label>
+    <div class="grid2" id="manual-coords">
+      <label class="field"><span>经度</span><input id="lon" placeholder="116.3975"></label>
+      <label class="field"><span>纬度</span><input id="lat" placeholder="39.9085"></label>
+    </div>
+    <label class="field"><span>定位误差 (米, 必填)</span>
+      <input id="geo-error" type="number" value="8" min="0" step="0.5"></label>
+    <label class="field"><span>定位依据说明</span>
+      <input id="geo-note" placeholder="如: 手持GPS漂移大 / 刺点参照物…"></label>
+
+    <div id="cam-box" hidden>
+      <h3>镜头投影参数 (像素 → 地面)</h3>
+      <div class="grid2">
+        <label class="field"><span>无人机经度</span><input id="c-dlon" value="116.3975"></label>
+        <label class="field"><span>无人机纬度</span><input id="c-dlat" value="39.9085"></label>
+        <label class="field"><span>对地高度 m</span><input id="c-alt" value="100" type="number"></label>
+        <label class="field"><span>航向 yaw° (北0)</span><input id="c-yaw" value="0" type="number"></label>
+        <label class="field"><span>俯仰 pitch° (下视 -90)</span><input id="c-pitch" value="-90" type="number"></label>
+        <label class="field"><span>焦距像素 fx</span><input id="c-focal" value="800" type="number"></label>
+        <label class="field"><span>画面宽 px</span><input id="c-fw" value="4000" type="number"></label>
+        <label class="field"><span>画面高 px</span><input id="c-fh" value="3000" type="number"></label>
+        <label class="field"><span>刺点 x px (画面坐标)</span><input id="c-px" value="2000" type="number"></label>
+        <label class="field"><span>刺点 y px</span><input id="c-py" value="1500" type="number"></label>
+      </div>
+      <p class="muted">服务端按姿态+高度计算地面点与综合误差 (GNSS/姿态/地形);
+        px/py 不会被当作经纬度。</p>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>⑤ 发现内容</h2>
+    <label class="field"><span>标题</span><input id="f-title" placeholder="如: 疑似病斑"></label>
+    <div class="grid2">
+      <label class="field"><span>类别</span><input id="f-cat" value="病害"></label>
+      <label class="field"><span>严重度</span>
+        <select id="f-sev"><option>低</option><option selected>中</option><option>高</option></select></label>
+    </div>
+    <label class="field"><span>备注</span><textarea id="f-note" rows="2"></textarea></label>
+    <button id="btn-submit">提交录入</button>
+  </div>
+
+  <div class="panel">
+    <h2>↗️ 跨设备补充</h2>
+    <div class="muted">输入另一台设备草稿的 8 位补充码, 可查看其待传素材并用本机续传。</div>
+    <div class="row">
+      <input id="share-in" placeholder="补充码" style="max-width:160px">
+      <button class="ghost" id="btn-fetch-draft">拉取草稿</button>
+    </div>
+    <div id="draft-info"></div>
+  </div>
+
+  <div class="panel">
+    <h2>📶 本地队列 / 断网续传</h2>
+    <div id="queue" class="muted">队列为空。</div>
+    <div class="row" style="margin-top:8px">
+      <button id="btn-flush">立即续传队列</button>
+      <button class="ghost" id="btn-queue-placeholder">仅提交占位发现(离线)</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/capture.js"></script>
+</body>
+</html>

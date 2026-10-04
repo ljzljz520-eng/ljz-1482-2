@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>报告与预览 · 农田工作台</title>
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<header class="topbar">
+  <h1>📋 报告与预览包</h1>
+  <nav class="tabs">
+    <a href="/index.html">地图·时间线</a>
+    <a href="/capture.html">移动端录入</a>
+    <a href="/conflicts.html">冲突与待补</a>
+    <a href="/report.html" class="active">报告</a>
+  </nav>
+</header>
+<div class="mobile-wrap" style="max-width:1040px">
+  <div class="panel">
+    <h2>报告列表</h2>
+    <div id="report-list"></div>
+  </div>
+
+  <div class="panel" id="report-panel" hidden>
+    <h2 id="r-title"></h2>
+    <div class="row">
+      <button id="btn-publish">发布报告</button>
+      <button id="btn-preview">生成预览包 (仅已审核 + 用户建议)</button>
+      <button id="btn-export">完整导出 (校验素材)</button>
+    </div>
+    <div id="action-result" class="muted" style="margin-top:8px"></div>
+
+    <h3 style="margin-top:14px">纳入发现</h3>
+    <table id="rf-table"><thead><tr>
+      <th>发现</th><th>审核状态</th><th>定位/归属</th><th>纳入</th><th>用户建议</th>
+    </tr></thead><tbody></tbody></table>
+
+    <h3>用户填写的农事建议 (系统不自动决定处置)</h3>
+    <div class="row">
+      <select id="sg-finding" style="max-width:260px"></select>
+      <input id="sg-text" placeholder="建议措施 (用户填写)">
+      <input id="sg-decision" placeholder="处置决定 (可留空 = 未决定)" style="max-width:220px">
+      <button id="btn-suggestion">保存建议</button>
+    </div>
+    <div id="sg-list"></div>
+
+    <h3>已派出复核事项 (保留原报告引用)</h3>
+    <div class="row">
+      <select id="rt-finding" style="max-width:260px"></select>
+      <input id="rt-assignee" placeholder="指派人" style="max-width:160px">
+      <input id="rt-note" placeholder="复核要求">
+      <button id="btn-rt">派出复核</button>
+    </div>
+    <div id="rt-list"></div>
+  </div>
+
+  <div class="panel">
+    <h3>预览包规则说明</h3>
+    <ul class="tight muted">
+      <li>预览包只包含 <b>reviewed</b> 的发现; pending_review / needs_evidence 一律排除并列清单。</li>
+      <li>预览包只携带<b>用户手工填写</b>的建议与决定, 系统不生成任何农事处置。</li>
+      <li>完整导出会逐个核对对象存储, 素材缺失则中止并给出待补清单。</li>
+      <li>地块边界修订后归属会重判, 但已派出复核仍保留 original_report_id 引用。</li>
+    </ul>
+  </div>
+</div>
+<script src="/js/api.js"></script>
+<script src="/js/report.js"></script>
+</body>
+</html>
