@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<title>航拍农田报告工作台</title>
+<link rel="stylesheet" href="/vendor/leaflet/leaflet.css"/>
+<link rel="stylesheet" href="/css/styles.css"/>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="brand">🛰️ 航拍农田报告工作台</div>
+    <nav class="tabs">
+      <button class="tab active" data-view="workbench">工作台</button>
+      <button class="tab" data-view="conflicts">冲突合并 <span id="confBadge" class="badge hidden">0</span></button>
+      <button class="tab" data-view="pending">待补证据 <span id="pendBadge" class="badge amber hidden">0</span></button>
+      <button class="tab" data-view="reports">报告与复核</button>
+      <button class="tab mobile-only" data-view="capture">📱 现场录入</button>
+    </nav>
+    <div class="who">当前用户：
+      <select id="userSelect"></select>
+      <button id="refreshBtn" title="刷新">⟳</button>
+    </div>
+  </header>
+
+  <!-- ================= WORKBENCH ================= -->
+  <section id="view-workbench" class="view">
+    <div class="wb-grid">
+      <aside class="left-pane">
+        <div class="card">
+          <h3>图层</h3>
+          <label class="ck"><input type="checkbox" id="lyPlots" checked/> 地块边界（当前版本）</label>
+          <label class="ck"><input type="checkbox" id="lyFootprints"/> 证据 footprint（镜头投影）</label>
+          <label class="ck"><input type="checkbox" id="lyErrors" checked/> 定位误差圆</label>
+          <label class="ck"><input type="checkbox" id="lyFlights" checked/> 飞行架次</label>
+          <label class="ck"><input type="checkbox" id="lyOldBoundary"/> 旧版本边界（虚线）</label>
+          <p class="hint">⚠️ 蓝色小点是<b>无人机位置</b>；橙色点才是<b>镜头投影到地面的目标位置</b>。帧内像素坐标绝不等于地理坐标。</p>
+        </div>
+        <div class="card">
+          <h3>地块边界修订</h3>
+          <p class="hint">修订后服务端按新版本重新判断全部发现归属；跨地块变化写入历史；同地块仅刷新版本引用。已派出复核保留派出时报告快照。</p>
+          <select id="revPlot"></select>
+          <button id="revDemoBtn" class="secondary">演示：把所选地块整体北移 120m 并重新判归属</button>
+        </div>
+        <div class="card">
+          <h3>发现列表</h3>
+          <div id="findingList" class="finding-list"></div>
+        </div>
+      </aside>
+
+      <main class="map-wrap">
+        <div id="map"></div>
+        <div id="mapLegend" class="legend"></div>
+      </main>
+
+      <aside class="right-pane">
+        <div class="card timeline-card">
+          <h3>时间线（三时间严格分开）</h3>
+          <div class="lane-filters">
+            <label><input type="checkbox" class="lane" value="flight" checked/> 飞行</label>
+            <label><input type="checkbox" class="lane" value="capture" checked/> 拍摄</label>
+            <label><input type="checkbox" class="lane" value="upload" checked/> 上传</label>
+            <label><input type="checkbox" class="lane" value="finding" checked/> 发现</label>
+            <label><input type="checkbox" class="lane" value="transcript" checked/> 转写晚到</label>
+          </div>
+          <div id="timeline" class="timeline"></div>
+        </div>
+        <div id="detailCard" class="card detail-card"></div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ================= CONFLICTS ================= -->
+  <section id="view-conflicts" class="view hidden">
+    <div class="page">
+      <h2>冲突合并中心</h2>
+      <p class="hint">规则：图像相似/位置临近<b>只产生提示冲突</b>，绝不自动合并；同一巡检轮次两人标注同处也进入此队列，需人工选择保留方并写明处理说明。合并会迁移（而非丢失）被合并方的各轮巡检证据。</p>
+      <div id="conflictList" class="stack"></div>
+    </div>
+  </section>
+
+  <!-- ================= PENDING ================= -->
+  <section id="view-pending" class="view hidden">
+    <div class="page">
+      <h2>待补证据（占位附件 / 断网 / 跨设备）</h2>
+      <p class="hint">支持两种工作流并显式区分：<b>① 素材传完再录发现</b>；<b>② 先创建带占位附件的发现</b>，现场断网排队，联网后续传，或用另一台设备补传同一发现。</p>
+      <div class="two-col">
+        <div class="card">
+          <h3>新建占位（先发现后补素材）</h3>
+          <input id="pendUid" placeholder="client_uid（设备本地唯一）"/>
+          <select id="pendKind"><option value="image">图片</option><option value="video">视频</option><option value="audio">语音</option></select>
+          <input id="pendFile" placeholder="文件名（如 IMG_pending.jpg）"/>
+          <select id="pendFinding"></select>
+          <button id="pendCreateBtn">创建占位附件</button>
+        </div>
+        <div class="card">
+          <h3>占位队列</h3>
+          <div id="pendingList" class="stack"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= REPORTS ================= -->
+  <section id="view-reports" class="view hidden">
+    <div class="page">
+      <h2>报告 · 预览包 · 复核派发 · 导出</h2>
+      <div class="card">
+        <p class="hint">预览包<b>只包含已审核（reviewed）发现与用户填写的建议</b>，系统不写入也不推荐任何自动农事处置结论。</p>
+        <input id="repTitle" value="2026年9月航拍巡检预览"/>
+        <button id="genReportBtn">生成预览包</button>
+      </div>
+      <div id="reportList" class="stack"></div>
+      <h3>已派出复核（永久引用派出时的报告版本）</h3>
+      <div id="reviewList" class="stack"></div>
+      <h3>导出记录（含素材缺失清单）</h3>
+      <div id="exportList" class="stack"></div>
+    </div>
+  </section>
+
+  <!-- ================= MOBILE CAPTURE ================= -->
+  <section id="view-capture" class="view hidden">
+    <div class="page mobile-page">
+      <h2>📱 现场录入（支持断网）</h2>
+      <div class="card">
+        <p class="hint">先拍照/录音并显式填写<b>拍摄时间</b>（离线用设备时间，可改）；上传完成时间由服务端补写，二者严格区分。断网时进入本地队列，恢复网络后续传；分块重复自动跳过。</p>
+        <div class="cap-row">
+          <label class="cap-btn">📷 拍照<input type="file" id="capImage" accept="image/*" capture="environment" hidden/></label>
+          <label class="cap-btn">🎥 视频<input type="file" id="capVideo" accept="video/*" capture="environment" hidden/></label>
+          <button class="cap-btn" id="capAudioBtn">🎙️ 按住说话</button>
+        </div>
+        <audio id="audioPreview" controls class="hidden"></audio>
+        <label>标题 <input id="capTitle" placeholder="如：疑似缺苗"/></label>
+        <label>类型 <select id="capType"><option>缺苗</option><option>病害</option><option>倒伏</option><option>虫害</option><option>其他</option></select></label>
+        <label>关联飞行 <select id="capFlight"></select></label>
+        <label>拍摄时间 <input type="datetime-local" id="capCaptured"/></label>
+        <label>定位依据
+          <select id="capBasis">
+            <option>手机GPS+照片EXIF(误差大, 需现场校准)</option>
+            <option>无人机正射投影+RTK</option>
+            <option>参照已知地物人工估读</option>
+          </select>
+        </label>
+        <label>估计误差(米) <input type="number" id="capError" value="15"/></label>
+        <div id="capLoc" class="hint">点击“用我的位置”或在地图页点选（演示可用默认坐标）。
+          <button type="button" class="secondary" id="capGps">用我的位置</button></div>
+        <div class="cap-row">
+          <label class="ck"><input type="checkbox" id="capOffline"/> 模拟断网（仅存本地）</label>
+          <button id="capSubmit">保存发现 / 加入队列</button>
+          <button id="capSync" class="secondary">同步本地队列</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>本地离线队列（IndexedDB 存 Blob + localStorage 存元数据）</h3>
+        <div id="offlineList" class="stack"></div>
+      </div>
+      <div id="capMap" class="mobile-map"></div>
+    </div>
+  </section>
+</div>
+<div id="toast"></div>
+<script src="/vendor/leaflet/leaflet.js"></script>
+<script src="/js/app.js"></script>
+<script src="/js/mobile.js"></script>
+</body>
+</html>
